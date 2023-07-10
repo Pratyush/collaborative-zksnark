@@ -4,16 +4,16 @@ pub mod group;
 pub use group::*;
 pub mod pairing;
 pub use pairing::*;
-pub mod msm;
 pub mod add;
+pub mod msm;
 pub use add::*;
 pub mod spdz;
 pub use spdz::*;
 pub mod gsz20;
 pub use gsz20::*;
 
-use std::marker::PhantomData;
 use derivative::Derivative;
+use std::marker::PhantomData;
 
 pub trait BeaverSource<A, B, C>: Clone {
     fn triple(&mut self) -> (A, B, C);
@@ -59,4 +59,3 @@ impl<A, B, C> BeaverSource<A, B, C> for PanicBeaverSource<A, B, C> {
         panic!("PanicBeaverSource")
     }
 }
-

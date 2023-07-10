@@ -2,25 +2,19 @@
 use derivative::Derivative;
 use rand::Rng;
 
-use ark_ec::group::Group;
-use ark_ec::{PairingEngine, ProjectiveCurve};
-use ark_ff::bytes::{FromBytes, ToBytes};
+use ark_ec::{pairing::Pairing, CurveGroup, Group};
 use ark_ff::prelude::*;
-use ark_poly::UVPolynomial;
-use ark_serialize::{
-    CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
-    CanonicalSerializeWithFlags, Flags, SerializationError,
-};
+use ark_poly::univariate::DensePolynomial;
 
 use std::borrow::Cow;
 use std::cmp::Ord;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::hash::Hash;
-use std::io::{self, Read, Write};
+use std::io::Write;
 use std::marker::PhantomData;
 
-use mpc_net::{MpcNet, MpcMultiNet as Net};
 use crate::channel::MpcSerNet;
+use mpc_net::{MpcMultiNet as Net, MpcNet};
 
 use super::field::{
     DenseOrSparsePolynomial, DensePolynomial, ExtFieldShare, FieldShare, SparsePolynomial,
@@ -97,23 +91,27 @@ impl<F: Field> Reveal for AdditiveFieldShare<F> {
         self.val
     }
     fn king_share<R: Rng>(f: Self::Base, rng: &mut R) -> Self {
-        let mut r: Vec<F> = (0..(Net::n_parties()-1)).map(|_| F::rand(rng)).collect();
+        let mut r: Vec<F> = (0..(Net::n_parties() - 1)).map(|_| F::rand(rng)).collect();
         let sum_r: F = r.iter().sum();
         r.push(f - sum_r);
-        Self::from_add_shared(Net::recv_from_king( if Net::am_king() { Some(r) } else { None }))
+        Self::from_add_shared(Net::recv_from_king(if Net::am_king() {
+            Some(r)
+        } else {
+            None
+        }))
     }
     fn king_share_batch<R: Rng>(f: Vec<Self::Base>, rng: &mut R) -> Vec<Self> {
-        let mut rs: Vec<Vec<Self::Base>> =
-            (0..(Net::n_parties()-1)).map(|_| {
-            (0..f.len()).map(|_| {
-                F::rand(rng)
-            }).collect()
-        }).collect();
-        let final_shares: Vec<Self::Base> = (0..rs[0].len()).map(|i| {
-            f[i] - &rs.iter().map(|r| &r[i]).sum()
-        }).collect();
+        let mut rs: Vec<Vec<Self::Base>> = (0..(Net::n_parties() - 1))
+            .map(|_| (0..f.len()).map(|_| F::rand(rng)).collect())
+            .collect();
+        let final_shares: Vec<Self::Base> = (0..rs[0].len())
+            .map(|i| f[i] - &rs.iter().map(|r| &r[i]).sum())
+            .collect();
         rs.push(final_shares);
-        Net::recv_from_king(if Net::am_king() { Some(rs) } else {None}).into_iter().map(Self::from_add_shared).collect()
+        Net::recv_from_king(if Net::am_king() { Some(rs) } else { None })
+            .into_iter()
+            .map(Self::from_add_shared)
+            .collect()
     }
 }
 
@@ -121,7 +119,9 @@ impl<F: Field> FieldShare<F> for AdditiveFieldShare<F> {
     fn batch_open(selfs: impl IntoIterator<Item = Self>) -> Vec<F> {
         let self_vec: Vec<F> = selfs.into_iter().map(|s| s.val).collect();
         let all_vals = Net::broadcast(&self_vec);
-        (0..self_vec.len()).map(|i| all_vals.iter().map(|v| &v[i]).sum()).collect()
+        (0..self_vec.len())
+            .map(|i| all_vals.iter().map(|v| &v[i]).sum())
+            .collect()
     }
     fn add(&mut self, other: &Self) -> &mut Self {
         self.val += &other.val;
@@ -194,23 +194,27 @@ impl<G: Group, M> Reveal for AdditiveGroupShare<G, M> {
         self.val
     }
     fn king_share<R: Rng>(f: Self::Base, rng: &mut R) -> Self {
-        let mut r: Vec<G> = (0..(Net::n_parties()-1)).map(|_| G::rand(rng)).collect();
+        let mut r: Vec<G> = (0..(Net::n_parties() - 1)).map(|_| G::rand(rng)).collect();
         let sum_r: G = r.iter().sum();
         r.push(f - sum_r);
-        Self::from_add_shared(Net::recv_from_king( if Net::am_king() { Some(r) } else { None }))
+        Self::from_add_shared(Net::recv_from_king(if Net::am_king() {
+            Some(r)
+        } else {
+            None
+        }))
     }
     fn king_share_batch<R: Rng>(f: Vec<Self::Base>, rng: &mut R) -> Vec<Self> {
-        let mut rs: Vec<Vec<Self::Base>> =
-            (0..(Net::n_parties()-1)).map(|_| {
-            (0..f.len()).map(|_| {
-                Self::Base::rand(rng)
-            }).collect()
-        }).collect();
-        let final_shares: Vec<Self::Base> = (0..rs[0].len()).map(|i| {
-            f[i] - &rs.iter().map(|r| &r[i]).sum()
-        }).collect();
+        let mut rs: Vec<Vec<Self::Base>> = (0..(Net::n_parties() - 1))
+            .map(|_| (0..f.len()).map(|_| Self::Base::rand(rng)).collect())
+            .collect();
+        let final_shares: Vec<Self::Base> = (0..rs[0].len())
+            .map(|i| f[i] - &rs.iter().map(|r| &r[i]).sum())
+            .collect();
         rs.push(final_shares);
-        Net::recv_from_king(if Net::am_king() { Some(rs) } else {None}).into_iter().map(Self::from_add_shared).collect()
+        Net::recv_from_king(if Net::am_king() { Some(rs) } else { None })
+            .into_iter()
+            .map(Self::from_add_shared)
+            .collect()
     }
 }
 
@@ -220,7 +224,9 @@ impl<G: Group, M: Msm<G, G::ScalarField>> GroupShare<G> for AdditiveGroupShare<G
     fn batch_open(selfs: impl IntoIterator<Item = Self>) -> Vec<G> {
         let self_vec: Vec<G> = selfs.into_iter().map(|s| s.val).collect();
         let all_vals = Net::broadcast(&self_vec);
-        (0..self_vec.len()).map(|i| all_vals.iter().map(|v| &v[i]).sum()).collect()
+        (0..self_vec.len())
+            .map(|i| all_vals.iter().map(|v| &v[i]).sum())
+            .collect()
     }
 
     fn add(&mut self, other: &Self) -> &mut Self {
@@ -266,54 +272,13 @@ macro_rules! impl_basics {
                 write!(f, "{}", self.val)
             }
         }
+
         impl<T: $bound> Debug for $share<T> {
             fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
                 write!(f, "{:?}", self.val)
             }
         }
-        impl<T: $bound> ToBytes for $share<T> {
-            fn write<W: Write>(&self, _writer: W) -> io::Result<()> {
-                unimplemented!("write")
-            }
-        }
-        impl<T: $bound> FromBytes for $share<T> {
-            fn read<R: Read>(_reader: R) -> io::Result<Self> {
-                unimplemented!("read")
-            }
-        }
-        impl<T: $bound> CanonicalSerialize for $share<T> {
-            fn serialize<W: Write>(&self, _writer: W) -> Result<(), SerializationError> {
-                unimplemented!("serialize")
-            }
-            fn serialized_size(&self) -> usize {
-                unimplemented!("serialized_size")
-            }
-        }
-        impl<T: $bound> CanonicalSerializeWithFlags for $share<T> {
-            fn serialize_with_flags<W: Write, F: Flags>(
-                &self,
-                _writer: W,
-                _flags: F,
-            ) -> Result<(), SerializationError> {
-                unimplemented!("serialize_with_flags")
-            }
 
-            fn serialized_size_with_flags<F: Flags>(&self) -> usize {
-                unimplemented!("serialized_size_with_flags")
-            }
-        }
-        impl<T: $bound> CanonicalDeserialize for $share<T> {
-            fn deserialize<R: Read>(_reader: R) -> Result<Self, SerializationError> {
-                unimplemented!("deserialize")
-            }
-        }
-        impl<T: $bound> CanonicalDeserializeWithFlags for $share<T> {
-            fn deserialize_with_flags<R: Read, F: Flags>(
-                _reader: R,
-            ) -> Result<(Self, F), SerializationError> {
-                unimplemented!("deserialize_with_flags")
-            }
-        }
         impl<T: $bound> UniformRand for $share<T> {
             fn rand<R: Rng + ?Sized>(rng: &mut R) -> Self {
                 Self::from_add_shared(<T as UniformRand>::rand(rng))
@@ -328,54 +293,13 @@ macro_rules! impl_basics_2_param {
                 write!(f, "{}", self.val)
             }
         }
+
         impl<T: $bound, M> Debug for $share<T, M> {
             fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
                 write!(f, "{:?}", self.val)
             }
         }
-        impl<T: $bound, M> ToBytes for $share<T, M> {
-            fn write<W: Write>(&self, _writer: W) -> io::Result<()> {
-                unimplemented!("write")
-            }
-        }
-        impl<T: $bound, M> FromBytes for $share<T, M> {
-            fn read<R: Read>(_reader: R) -> io::Result<Self> {
-                unimplemented!("read")
-            }
-        }
-        impl<T: $bound, M> CanonicalSerialize for $share<T, M> {
-            fn serialize<W: Write>(&self, _writer: W) -> Result<(), SerializationError> {
-                unimplemented!("serialize")
-            }
-            fn serialized_size(&self) -> usize {
-                unimplemented!("serialized_size")
-            }
-        }
-        impl<T: $bound, M> CanonicalSerializeWithFlags for $share<T, M> {
-            fn serialize_with_flags<W: Write, F: Flags>(
-                &self,
-                _writer: W,
-                _flags: F,
-            ) -> Result<(), SerializationError> {
-                unimplemented!("serialize_with_flags")
-            }
 
-            fn serialized_size_with_flags<F: Flags>(&self) -> usize {
-                unimplemented!("serialized_size_with_flags")
-            }
-        }
-        impl<T: $bound, M> CanonicalDeserialize for $share<T, M> {
-            fn deserialize<R: Read>(_reader: R) -> Result<Self, SerializationError> {
-                unimplemented!("deserialize")
-            }
-        }
-        impl<T: $bound, M> CanonicalDeserializeWithFlags for $share<T, M> {
-            fn deserialize_with_flags<R: Read, F: Flags>(
-                _reader: R,
-            ) -> Result<(Self, F), SerializationError> {
-                unimplemented!("deserialize_with_flags")
-            }
-        }
         impl<T: $bound, M> UniformRand for $share<T, M> {
             fn rand<R: Rng + ?Sized>(rng: &mut R) -> Self {
                 Reveal::from_add_shared(<T as UniformRand>::rand(rng))
@@ -434,7 +358,9 @@ impl<F: Field> FieldShare<F> for MulFieldShare<F> {
     fn batch_open(selfs: impl IntoIterator<Item = Self>) -> Vec<F> {
         let self_vec: Vec<F> = selfs.into_iter().map(|s| s.val).collect();
         let all_vals = Net::broadcast(&self_vec);
-        (0..self_vec.len()).map(|i| all_vals.iter().map(|v| &v[i]).product()).collect()
+        (0..self_vec.len())
+            .map(|i| all_vals.iter().map(|v| &v[i]).product())
+            .collect()
     }
 
     fn add(&mut self, _other: &Self) -> &mut Self {
@@ -499,9 +425,9 @@ impl_basics!(MulFieldShare, Field);
 
 macro_rules! groups_share {
     ($struct_name:ident, $affine:ident, $proj:ident) => {
-        pub struct $struct_name<E: PairingEngine>(pub PhantomData<E>);
+        pub struct $struct_name<E: Pairing>(pub PhantomData<E>);
 
-        impl<E: PairingEngine> AffProjShare<E::Fr, E::$affine, E::$proj> for $struct_name<E> {
+        impl<E: Pairing> AffProjShare<E::Fr, E::$affine, E::$proj> for $struct_name<E> {
             type FrShare = AdditiveFieldShare<E::Fr>;
             type AffineShare = AdditiveGroupShare<E::$affine, crate::msm::AffineMsm<E::$affine>>;
             type ProjectiveShare =
@@ -550,9 +476,9 @@ groups_share!(AdditiveG2Share, G2Affine, G2Projective);
     Eq(bound = "E::G1Affine: Eq"),
     Hash(bound = "E::G1Affine: Hash")
 )]
-pub struct AdditivePairingShare<E: PairingEngine>(pub PhantomData<E>);
+pub struct AdditivePairingShare<E: Pairing>(pub PhantomData<E>);
 
-impl<E: PairingEngine> PairingShare<E> for AdditivePairingShare<E> {
+impl<E: Pairing> PairingShare<E> for AdditivePairingShare<E> {
     type FrShare = AdditiveFieldShare<E::Fr>;
     type FqShare = AdditiveFieldShare<E::Fq>;
     type FqeShare = AdditiveExtFieldShare<E::Fqe>;

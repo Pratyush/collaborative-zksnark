@@ -3,7 +3,6 @@ use log::debug;
 use rand::Rng;
 use zeroize::Zeroize;
 
-use ark_ff::bytes::{FromBytes, ToBytes};
 use ark_ff::prelude::*;
 use ark_ff::{poly_stub, FftField};
 use ark_serialize::{
@@ -21,7 +20,7 @@ use std::ops::*;
 use super::super::share::field::FieldShare;
 use super::super::share::BeaverSource;
 use crate::Reveal;
-use mpc_net::{MpcNet, MpcMultiNet as Net};
+use mpc_net::{MpcMultiNet as Net, MpcNet};
 
 #[derive(Clone, Copy, Hash, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MpcField<F: Field, S: FieldShare<F>> {
@@ -42,36 +41,16 @@ impl<T: Field, S: FieldShare<T>> BeaverSource<S, S, S> for DummyFieldTripleSourc
     #[inline]
     fn triple(&mut self) -> (S, S, S) {
         (
-            S::from_add_shared(if Net::am_king() {
-                T::one()
-            } else {
-                T::zero()
-            }),
-            S::from_add_shared(if Net::am_king() {
-                T::one()
-            } else {
-                T::zero()
-            }),
-            S::from_add_shared(if Net::am_king() {
-                T::one()
-            } else {
-                T::zero()
-            }),
+            S::from_add_shared(if Net::am_king() { T::one() } else { T::zero() }),
+            S::from_add_shared(if Net::am_king() { T::one() } else { T::zero() }),
+            S::from_add_shared(if Net::am_king() { T::one() } else { T::zero() }),
         )
     }
     #[inline]
     fn inv_pair(&mut self) -> (S, S) {
         (
-            S::from_add_shared(if Net::am_king() {
-                T::one()
-            } else {
-                T::zero()
-            }),
-            S::from_add_shared(if Net::am_king() {
-                T::one()
-            } else {
-                T::zero()
-            }),
+            S::from_add_shared(if Net::am_king() { T::one() } else { T::zero() }),
+            S::from_add_shared(if Net::am_king() { T::one() } else { T::zero() }),
         )
     }
 }
@@ -180,42 +159,10 @@ impl<'a, T: Field, S: FieldShare<T>> DivAssign<&'a MpcField<T, S>> for MpcField<
     }
 }
 
-impl_ref_ops!(
-    Mul,
-    MulAssign,
-    mul,
-    mul_assign,
-    Field,
-    FieldShare,
-    MpcField
-);
-impl_ref_ops!(
-    Add,
-    AddAssign,
-    add,
-    add_assign,
-    Field,
-    FieldShare,
-    MpcField
-);
-impl_ref_ops!(
-    Div,
-    DivAssign,
-    div,
-    div_assign,
-    Field,
-    FieldShare,
-    MpcField
-);
-impl_ref_ops!(
-    Sub,
-    SubAssign,
-    sub,
-    sub_assign,
-    Field,
-    FieldShare,
-    MpcField
-);
+impl_ref_ops!(Mul, MulAssign, mul, mul_assign, Field, FieldShare, MpcField);
+impl_ref_ops!(Add, AddAssign, add, add_assign, Field, FieldShare, MpcField);
+impl_ref_ops!(Div, DivAssign, div, div_assign, Field, FieldShare, MpcField);
+impl_ref_ops!(Sub, SubAssign, sub, sub_assign, Field, FieldShare, MpcField);
 
 impl<T: Field, S: FieldShare<T>> MpcWire for MpcField<T, S> {
     #[inline]
@@ -277,7 +224,10 @@ impl<T: Field, S: FieldShare<T>> Reveal for MpcField<T, S> {
     }
     #[inline]
     fn king_share_batch<R: Rng>(f: Vec<Self::Base>, rng: &mut R) -> Vec<Self> {
-        S::king_share_batch(f, rng).into_iter().map(Self::Shared).collect()
+        S::king_share_batch(f, rng)
+            .into_iter()
+            .map(Self::Shared)
+            .collect()
     }
     fn init_protocol() {
         S::init_protocol()
@@ -465,24 +415,44 @@ impl<F: PrimeField, S: FieldShare<F>> Field for MpcField<F, S> {
     )> {
         use poly_stub::DenseOrSparsePolynomial::*;
         let shared_num = match num {
-            DPolynomial(d) => Ok(d.into_owned().coeffs.into_iter().map(|c| match c {
-                MpcField::Shared(s) => s,
-                MpcField::Public(_) => panic!("public numerator"),
-            }).collect()),
-            SPolynomial(d) => Err(d.into_owned().coeffs.into_iter().map(|(i, c)| match c {
-                MpcField::Shared(s) => (i, s),
-                MpcField::Public(_) => panic!("public numerator"),
-            }).collect()),
+            DPolynomial(d) => Ok(d
+                .into_owned()
+                .coeffs
+                .into_iter()
+                .map(|c| match c {
+                    MpcField::Shared(s) => s,
+                    MpcField::Public(_) => panic!("public numerator"),
+                })
+                .collect()),
+            SPolynomial(d) => Err(d
+                .into_owned()
+                .coeffs
+                .into_iter()
+                .map(|(i, c)| match c {
+                    MpcField::Shared(s) => (i, s),
+                    MpcField::Public(_) => panic!("public numerator"),
+                })
+                .collect()),
         };
         let pub_denom = match den {
-            DPolynomial(d) => Ok(d.into_owned().coeffs.into_iter().map(|c| match c {
-                MpcField::Public(s) => s,
-                MpcField::Shared(_) => panic!("shared denominator"),
-            }).collect()),
-            SPolynomial(d) => Err(d.into_owned().coeffs.into_iter().map(|(i, c)| match c {
-                MpcField::Public(s) => (i, s),
-                MpcField::Shared(_) => panic!("shared denominator"),
-            }).collect()),
+            DPolynomial(d) => Ok(d
+                .into_owned()
+                .coeffs
+                .into_iter()
+                .map(|c| match c {
+                    MpcField::Public(s) => s,
+                    MpcField::Shared(_) => panic!("shared denominator"),
+                })
+                .collect()),
+            SPolynomial(d) => Err(d
+                .into_owned()
+                .coeffs
+                .into_iter()
+                .map(|(i, c)| match c {
+                    MpcField::Public(s) => (i, s),
+                    MpcField::Shared(_) => panic!("shared denominator"),
+                })
+                .collect()),
         };
         S::univariate_div_qr(shared_num, pub_denom).map(|(q, r)| {
             (
@@ -498,49 +468,44 @@ impl<F: PrimeField, S: FieldShare<F>> Field for MpcField<F, S> {
 }
 
 impl<F: PrimeField, S: FieldShare<F>> FftField for MpcField<F, S> {
-    type FftParams = F::FftParams;
-    #[inline]
-    fn two_adic_root_of_unity() -> Self {
-        Self::from_public(F::two_adic_root_of_unity())
-    }
-    #[inline]
-    fn large_subgroup_root_of_unity() -> Option<Self> {
-        F::large_subgroup_root_of_unity().map(Self::from_public)
-    }
-    #[inline]
-    fn multiplicative_generator() -> Self {
-        Self::from_public(F::multiplicative_generator())
-    }
+    /// The generator of the multiplicative group of the field
+    const GENERATOR: Self = Self::Public(F::GENERATOR);
+
+    /// Let `N` be the size of the multiplicative group defined by the field.
+    /// Then `TWO_ADICITY` is the two-adicity of `N`, i.e. the integer `s`
+    /// such that `N = 2^s * t` for some odd integer `t`.
+    const TWO_ADICITY: u32 = F::TWO_ADICITY;
+
+    /// 2^s root of unity computed by GENERATOR^t
+    const TWO_ADIC_ROOT_OF_UNITY: Self = Self::Public(F::TWO_ADIC_ROOT_OF_UNITY);
+
+    /// An integer `b` such that there exists a multiplicative subgroup
+    /// of size `b^k` for some integer `k`.
+    const SMALL_SUBGROUP_BASE: Option<u32> = F::SMALL_SUBGROUP_BASE;
+
+    /// The integer `k` such that there exists a multiplicative subgroup
+    /// of size `Self::SMALL_SUBGROUP_BASE^k`.
+    const SMALL_SUBGROUP_BASE_ADICITY: Option<u32> = F::SMALL_SUBGROUP_BASE_ADICITY;
+
+    /// GENERATOR^((MODULUS-1) / (2^s *
+    /// SMALL_SUBGROUP_BASE^SMALL_SUBGROUP_BASE_ADICITY)) Used for mixed-radix
+    /// FFT.
+    const LARGE_SUBGROUP_ROOT_OF_UNITY: Option<Self> = F::LARGE_SUBGROUP_ROOT_OF_UNITY;
 }
 
 impl<F: PrimeField, S: FieldShare<F>> PrimeField for MpcField<F, S> {
-    type Params = F::Params;
     type BigInt = F::BigInt;
+
     #[inline]
-    fn from_repr(_r: <Self as PrimeField>::BigInt) -> Option<Self> {
-        unimplemented!("No BigInt reprs for shared fields! (from_repr)")
-        //F::from_repr(r).map(|v| Self::from_public(v))
+    fn from_bigint(repr: Self::BigInt) -> Option<Self> {
+        unimplemented!("No BigInt conversions for shared fields! (from_bigint)")
+        // F::from_bigint(repr).map(Self::Shared)
     }
     // We're assuming that into_repr is linear
     #[inline]
-    fn into_repr(&self) -> <Self as PrimeField>::BigInt {
+    fn into_bigint(&self) -> Self::BigInt {
         unimplemented!("No BigInt reprs for shared fields! (into_repr)")
         //self.unwrap_as_public().into_repr()
-    }
-}
-
-impl<F: PrimeField, S: FieldShare<F>> SquareRootField for MpcField<F, S> {
-    #[inline]
-    fn legendre(&self) -> ark_ff::LegendreSymbol {
-        todo!()
-    }
-    #[inline]
-    fn sqrt(&self) -> Option<Self> {
-        todo!()
-    }
-    #[inline]
-    fn sqrt_in_place(&mut self) -> Option<&mut Self> {
-        todo!()
     }
 }
 
@@ -565,21 +530,21 @@ mod poly_impl {
         fn reveal(self) -> Self::Base {
             Evaluations::from_vec_and_domain(
                 self.evals.reveal(),
-                GeneralEvaluationDomain::new(self.domain.size()).unwrap(),
+                GeneralEvaluationDomain::new(self.domain().size()).unwrap(),
             )
         }
 
         fn from_add_shared(b: Self::Base) -> Self {
             Evaluations::from_vec_and_domain(
                 Reveal::from_add_shared(b.evals),
-                GeneralEvaluationDomain::new(b.domain.size()).unwrap(),
+                GeneralEvaluationDomain::new(b.domain().size()).unwrap(),
             )
         }
 
         fn from_public(b: Self::Base) -> Self {
             Evaluations::from_vec_and_domain(
                 Reveal::from_public(b.evals),
-                GeneralEvaluationDomain::new(b.domain.size()).unwrap(),
+                GeneralEvaluationDomain::new(b.domain().size()).unwrap(),
             )
         }
     }

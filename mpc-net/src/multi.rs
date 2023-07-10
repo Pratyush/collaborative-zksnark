@@ -10,7 +10,6 @@ use ark_std::{end_timer, start_timer};
 
 use super::{MpcNet, Stats};
 
-#[macro_use]
 lazy_static! {
     static ref CONNECTIONS: Mutex<Connections> = Mutex::new(Connections::default());
 }

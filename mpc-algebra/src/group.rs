@@ -1,11 +1,7 @@
-use ark_ec::group::Group;
-use ark_ff::bytes::{FromBytes, ToBytes};
+use ark_ec::Group;
 use ark_ff::prelude::*;
-use ark_serialize::{
-    CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
-    CanonicalSerializeWithFlags, Flags, SerializationError,
-};
-use ark_std::io::{self, Read, Write};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_std::io::Write;
 use core::ops::*;
 use rand::Rng;
 use std::cmp::Ord;
@@ -18,7 +14,18 @@ use zeroize::Zeroize;
 
 use mpc_trait::MpcWire;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    CanonicalSerialize,
+    CanonicalDeserialize,
+)]
 pub struct MulFieldGroup<F: Field, S: PrimeField> {
     val: F,
     _scalar: PhantomData<S>,
@@ -39,56 +46,13 @@ impl<T: Field, S: PrimeField> Display for MulFieldGroup<T, S> {
         write!(f, "{} (shared)", self.val)
     }
 }
-impl<T: Field, S: PrimeField> ToBytes for MulFieldGroup<T, S> {
-    fn write<W: Write>(&self, _writer: W) -> io::Result<()> {
-        unimplemented!("write")
-    }
-}
-impl<T: Field, S: PrimeField> FromBytes for MulFieldGroup<T, S> {
-    fn read<R: Read>(_reader: R) -> io::Result<Self> {
-        unimplemented!("read")
-    }
-}
-impl<T: Field, S: PrimeField> CanonicalSerialize for MulFieldGroup<T, S> {
-    fn serialize<W: Write>(&self, _writer: W) -> Result<(), SerializationError> {
-        unimplemented!("serialize")
-    }
-    fn serialized_size(&self) -> usize {
-        unimplemented!("serialized_size")
-    }
-}
-impl<T: Field, S: PrimeField> CanonicalSerializeWithFlags for MulFieldGroup<T, S> {
-    fn serialize_with_flags<W: Write, F: Flags>(
-        &self,
-        _writer: W,
-        _flags: F,
-    ) -> Result<(), SerializationError> {
-        unimplemented!("serialize_with_flags")
-    }
 
-    fn serialized_size_with_flags<F: Flags>(&self) -> usize {
-        unimplemented!("serialized_size_with_flags")
-    }
-}
-impl<T: Field, S: PrimeField> CanonicalDeserialize for MulFieldGroup<T, S> {
-    fn deserialize<R: Read>(_reader: R) -> Result<Self, SerializationError> {
-        unimplemented!("deserialize")
-    }
-}
-impl<T: Field, S: PrimeField> CanonicalDeserializeWithFlags for MulFieldGroup<T, S> {
-    fn deserialize_with_flags<R: Read, F: Flags>(
-        _reader: R,
-    ) -> Result<(Self, F), SerializationError> {
-        unimplemented!("deserialize_with_flags")
-    }
-}
 impl<T: Field, S: PrimeField> UniformRand for MulFieldGroup<T, S> {
     fn rand<R: Rng + ?Sized>(rng: &mut R) -> Self {
         Self::new(<T as UniformRand>::rand(rng))
     }
 }
-impl<T: Field, S: PrimeField> PubUniformRand for MulFieldGroup<T, S> {
-}
+impl<T: Field, S: PrimeField> mpc_trait::PubUniformRand for MulFieldGroup<T, S> {}
 
 impl<T: Field, S: PrimeField> Add for MulFieldGroup<T, S> {
     type Output = Self;

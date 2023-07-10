@@ -1,8 +1,8 @@
 pub mod multi;
 pub mod two;
 
-pub use two::MpcTwoNet;
 pub use multi::MpcMultiNet;
+pub use two::MpcTwoNet;
 
 #[derive(Clone, Debug)]
 pub struct Stats {

@@ -3,8 +3,7 @@ use log::debug;
 use rand::Rng;
 use zeroize::Zeroize;
 
-use ark_ec::group::Group;
-use ark_ff::bytes::{FromBytes, ToBytes};
+use ark_ec::Group;
 use ark_ff::prelude::*;
 use ark_serialize::{
     CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
@@ -21,8 +20,8 @@ use std::ops::*;
 use super::super::share::group::GroupShare;
 use super::super::share::BeaverSource;
 use super::field::MpcField;
-use mpc_net::{MpcNet, MpcMultiNet as Net};
 use crate::Reveal;
+use mpc_net::{MpcMultiNet as Net, MpcNet};
 
 #[derive(Clone, Copy, Hash, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MpcGroup<G: Group, S: GroupShare<G>> {
@@ -93,6 +92,7 @@ impl<T: Group, S: GroupShare<T>> MpcWire for MpcGroup<T, S> {
             true
         })
     }
+
     #[inline]
     fn is_shared(&self) -> bool {
         match self {
@@ -134,7 +134,10 @@ impl<T: Group, S: GroupShare<T>> Reveal for MpcGroup<T, S> {
     }
     #[inline]
     fn king_share_batch<R: Rng>(f: Vec<Self::Base>, rng: &mut R) -> Vec<Self> {
-        S::king_share_batch(f, rng).into_iter().map(Self::Shared).collect()
+        S::king_share_batch(f, rng)
+            .into_iter()
+            .map(Self::Shared)
+            .collect()
     }
     fn init_protocol() {
         S::init_protocol()

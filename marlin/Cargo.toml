@@ -20,30 +20,30 @@ license = "MIT/Apache-2.0"
 edition = "2018"
 
 [dependencies]
-ark-serialize = { path = "../algebra/serialize", version = "^0.2.0", default-features = false, features = [ "derive" ] }
-ark-ff = { path = "../algebra/ff", version = "^0.2.0", default-features = false }
-ark-ec = { path = "../algebra/ec", version = "^0.2.0", default-features = false }
-ark-std = { path = "../utils", default-features = false }
-ark-poly = { path = "../algebra/poly", version = "^0.2.0", default-features = false }
-ark-relations = { path = "../snark/relations", version = "^0.2.0", default-features = false }
-ark-poly-commit = { path = "../poly-commit", version = "^0.2.0", default-features = false }
+ark-serialize = { version = "0.4.0", default-features = false, features = [ "derive" ] }
+ark-ff = { version = "0.4.0", default-features = false }
+ark-ec = { version = "0.4.0", default-features = false }
+ark-poly = { version = "0.4.0", default-features = false }
+ark-relations = { version = "0.4.0", default-features = false }
+ark-std = { version = "0.4.0", default-features = false, features = [ "print-trace", "std" ] }
+ark-poly-commit = { version = "0.4.0", default-features = false, features = [ "print-trace", "std" ] }
+ark-bls12-377 = { version = "0.4.0", default-features = false, features = ["curve"] }
+lazy_static = "1"
+once_cell = "1.8"
+derivative = { version = "2.0", features = ["use_core"]}
+log = {version = "0.4"}
+digest = { version = "0.10" }
 
-rand_chacha = { version = "0.2.1", default-features = false }
+rand = { version = "0.8", default-features = false, features = ["std"] }
+rand_chacha = { version = "0.3", default-features = false }
 rayon = { version = "1", optional = true }
-digest = { version = "0.9" }
-derivative = { version = "2", features = ["use_core"] }
+zeroize = { version = "1", default-features = false, features = ["zeroize_derive"] }
+blake2 = { version = "0.10" }
+mpc-net = { path = "../mpc-net" }
 mpc-algebra = { path = "../mpc-algebra" }
 mpc-trait = { path = "../mpc-trait" }
-blake2 = "0.9"
-ark-bls12-377 = { path = "../curves/bls12_377", version = "0.2.0", default-features = false, features = ["curve"] }
 
-[dev-dependencies]
-blake2 = { version = "0.9", default-features = false }
-ark-bls12-381 = { version = "^0.2.0", default-features = false, features = [ "curve" ] }
-ark-mnt4-298 = { version = "^0.2.0", default-features = false, features = ["r1cs", "curve"] }
-ark-mnt6-298 = { version = "^0.2.0", default-features = false, features = ["r1cs"] }
-ark-mnt4-753 = { version = "^0.2.0", default-features = false, features = ["r1cs", "curve"] }
-ark-mnt6-753 = { version = "^0.2.0", default-features = false, features = ["r1cs"] }
+
 
 [profile.release]
 opt-level = 3

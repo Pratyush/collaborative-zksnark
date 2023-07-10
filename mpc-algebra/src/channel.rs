@@ -75,7 +75,10 @@ pub trait MpcSerNet: MpcNet {
     }
 
     #[inline]
-    fn king_compute<T: CanonicalDeserialize + CanonicalSerialize>(x: &T, f: impl Fn(Vec<T>) -> Vec<T>) -> T {
+    fn king_compute<T: CanonicalDeserialize + CanonicalSerialize>(
+        x: &T,
+        f: impl Fn(Vec<T>) -> Vec<T>,
+    ) -> T {
         let king_response = Self::send_to_king(x).map(f);
         Self::recv_from_king(king_response)
     }

@@ -1,6 +1,6 @@
 use log::debug;
-use mpc_net::multi as net;
 use mpc_algebra::share::gs20;
+use mpc_net::multi as net;
 
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -17,7 +17,10 @@ struct Opt {
 }
 
 fn main() {
-    env_logger::builder().format_timestamp(None).format_module_path(false).init();
+    env_logger::builder()
+        .format_timestamp(None)
+        .format_module_path(false)
+        .init();
     debug!("Start");
     let opt = Opt::from_args();
     println!("{:?}", opt);

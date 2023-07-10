@@ -6,7 +6,7 @@ use mpc_algebra::{
     msm::NaiveMsm, share::field::FieldShare, share::group::GroupShare, share::gsz20::*,
     share::pairing::PairingShare, Reveal,
 };
-use mpc_net::{MpcNet, MpcMultiNet as Net};
+use mpc_net::{MpcMultiNet as Net, MpcNet};
 
 use std::path::PathBuf;
 use structopt::StructOpt;

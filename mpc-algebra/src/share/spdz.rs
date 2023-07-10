@@ -16,8 +16,8 @@ use std::hash::Hash;
 use std::io::{self, Read, Write};
 use std::marker::PhantomData;
 
-use mpc_net::{MpcNet, MpcMultiNet as Net};
 use crate::channel::{can_cheat, MpcSerNet};
+use mpc_net::{MpcMultiNet as Net, MpcNet};
 
 use super::add::{AdditiveFieldShare, AdditiveGroupShare, MulFieldShare};
 use super::field::{DenseOrSparsePolynomial, DensePolynomial, ExtFieldShare, FieldShare};
@@ -142,23 +142,27 @@ impl<F: Field> Reveal for SpdzFieldShare<F> {
         }
     }
     fn king_share<R: Rng>(f: Self::Base, rng: &mut R) -> Self {
-        let mut r: Vec<F> = (0..(Net::n_parties()-1)).map(|_| F::rand(rng)).collect();
+        let mut r: Vec<F> = (0..(Net::n_parties() - 1)).map(|_| F::rand(rng)).collect();
         let sum_r: F = r.iter().sum();
         r.push(f - sum_r);
-        Self::from_add_shared(Net::recv_from_king( if Net::am_king() { Some(r) } else { None }))
+        Self::from_add_shared(Net::recv_from_king(if Net::am_king() {
+            Some(r)
+        } else {
+            None
+        }))
     }
     fn king_share_batch<R: Rng>(f: Vec<Self::Base>, rng: &mut R) -> Vec<Self> {
-        let mut rs: Vec<Vec<Self::Base>> =
-            (0..(Net::n_parties()-1)).map(|_| {
-            (0..f.len()).map(|_| {
-                F::rand(rng)
-            }).collect()
-        }).collect();
-        let final_shares: Vec<Self::Base> = (0..rs[0].len()).map(|i| {
-            f[i] - &rs.iter().map(|r| &r[i]).sum()
-        }).collect();
+        let mut rs: Vec<Vec<Self::Base>> = (0..(Net::n_parties() - 1))
+            .map(|_| (0..f.len()).map(|_| F::rand(rng)).collect())
+            .collect();
+        let final_shares: Vec<Self::Base> = (0..rs[0].len())
+            .map(|i| f[i] - &rs.iter().map(|r| &r[i]).sum())
+            .collect();
         rs.push(final_shares);
-        Net::recv_from_king(if Net::am_king() { Some(rs) } else {None}).into_iter().map(Self::from_add_shared).collect()
+        Net::recv_from_king(if Net::am_king() { Some(rs) } else { None })
+            .into_iter()
+            .map(Self::from_add_shared)
+            .collect()
     }
 }
 
@@ -168,10 +172,10 @@ impl<F: Field> FieldShare<F> for SpdzFieldShare<F> {
             selfs.into_iter().map(|s| (s.sh.val, s.mac.val)).unzip();
         let n = s_vals.len();
         let all_vals = Net::broadcast(&s_vals);
-        let vals: Vec<F> =
-            (0..n).map(|i| all_vals.iter().map(|v| &v[i]).sum()).collect();
-        let dx_ts: Vec<F> =
-            macs
+        let vals: Vec<F> = (0..n)
+            .map(|i| all_vals.iter().map(|v| &v[i]).sum())
+            .collect();
+        let dx_ts: Vec<F> = macs
             .iter()
             .zip(vals.iter())
             .map(|(mac, val)| mac_share::<F>() * val - mac)
@@ -294,23 +298,27 @@ impl<G: Group, M> Reveal for SpdzGroupShare<G, M> {
         }
     }
     fn king_share<R: Rng>(f: Self::Base, rng: &mut R) -> Self {
-        let mut r: Vec<G> = (0..(Net::n_parties()-1)).map(|_| G::rand(rng)).collect();
+        let mut r: Vec<G> = (0..(Net::n_parties() - 1)).map(|_| G::rand(rng)).collect();
         let sum_r: G = r.iter().sum();
         r.push(f - sum_r);
-        Self::from_add_shared(Net::recv_from_king( if Net::am_king() { Some(r) } else { None }))
+        Self::from_add_shared(Net::recv_from_king(if Net::am_king() {
+            Some(r)
+        } else {
+            None
+        }))
     }
     fn king_share_batch<R: Rng>(f: Vec<Self::Base>, rng: &mut R) -> Vec<Self> {
-        let mut rs: Vec<Vec<Self::Base>> =
-            (0..(Net::n_parties()-1)).map(|_| {
-            (0..f.len()).map(|_| {
-                Self::Base::rand(rng)
-            }).collect()
-        }).collect();
-        let final_shares: Vec<Self::Base> = (0..rs[0].len()).map(|i| {
-            f[i] - &rs.iter().map(|r| &r[i]).sum()
-        }).collect();
+        let mut rs: Vec<Vec<Self::Base>> = (0..(Net::n_parties() - 1))
+            .map(|_| (0..f.len()).map(|_| Self::Base::rand(rng)).collect())
+            .collect();
+        let final_shares: Vec<Self::Base> = (0..rs[0].len())
+            .map(|i| f[i] - &rs.iter().map(|r| &r[i]).sum())
+            .collect();
         rs.push(final_shares);
-        Net::recv_from_king(if Net::am_king() { Some(rs) } else {None}).into_iter().map(Self::from_add_shared).collect()
+        Net::recv_from_king(if Net::am_king() { Some(rs) } else { None })
+            .into_iter()
+            .map(Self::from_add_shared)
+            .collect()
     }
 }
 macro_rules! impl_spdz_basics_2_param {
@@ -387,10 +395,10 @@ impl<G: Group, M: Msm<G, G::ScalarField>> GroupShare<G> for SpdzGroupShare<G, M>
             selfs.into_iter().map(|s| (s.sh.val, s.mac.val)).unzip();
         let n = s_vals.len();
         let all_vals = Net::broadcast(&s_vals);
-        let vals: Vec<G> =
-            (0..n).map(|i| all_vals.iter().map(|v| &v[i]).sum()).collect();
-        let dx_ts: Vec<G> =
-            macs
+        let vals: Vec<G> = (0..n)
+            .map(|i| all_vals.iter().map(|v| &v[i]).sum())
+            .collect();
+        let dx_ts: Vec<G> = macs
             .iter()
             .zip(vals.iter())
             .map(|(mac, val)| val.mul(&mac_share::<G::ScalarField>()) - mac)
@@ -642,10 +650,8 @@ impl<E: PairingEngine> PairingShare<E> for SpdzPairingShare<E> {
     type FqkShare = SpdzMulExtFieldShare<E::Fqk, E::Fr>;
     type G1AffineShare = SpdzGroupShare<E::G1Affine, AffineMsm<E::G1Affine>>;
     type G2AffineShare = SpdzGroupShare<E::G2Affine, AffineMsm<E::G2Affine>>;
-    type G1ProjectiveShare =
-        SpdzGroupShare<E::G1Projective, ProjectiveMsm<E::G1Projective>>;
-    type G2ProjectiveShare =
-        SpdzGroupShare<E::G2Projective, ProjectiveMsm<E::G2Projective>>;
+    type G1ProjectiveShare = SpdzGroupShare<E::G1Projective, ProjectiveMsm<E::G1Projective>>;
+    type G2ProjectiveShare = SpdzGroupShare<E::G2Projective, ProjectiveMsm<E::G2Projective>>;
     type G1 = SpdzG1Share<E>;
     type G2 = SpdzG2Share<E>;
 }

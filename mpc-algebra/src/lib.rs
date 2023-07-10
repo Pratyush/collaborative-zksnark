@@ -1,5 +1,4 @@
 #![macro_use]
-#![feature(associated_type_defaults)]
 
 pub mod reveal;
 pub use reveal::*;
@@ -47,8 +46,8 @@ pub mod malicious_majority {
 
 pub mod honest_majority {
     use super::{
-        share::msm::NaiveMsm,
         share::gsz20::{field::GszFieldShare, group::GszGroupShare},
+        share::msm::NaiveMsm,
         wire::{field, group},
     };
     pub type MpcField<F> = field::MpcField<F, GszFieldShare<F>>;

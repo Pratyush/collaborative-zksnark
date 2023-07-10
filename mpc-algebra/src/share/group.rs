@@ -1,5 +1,4 @@
-use ark_ec::group::Group;
-use ark_ff::bytes::{FromBytes, ToBytes};
+use ark_ec::Group;
 use ark_ff::prelude::*;
 use ark_serialize::{
     CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
@@ -29,8 +28,6 @@ pub trait GroupShare<G: Group>:
     + CanonicalSerializeWithFlags
     + CanonicalDeserializeWithFlags
     + UniformRand
-    + ToBytes
-    + FromBytes
     + 'static
     + Reveal<Base = G>
 {

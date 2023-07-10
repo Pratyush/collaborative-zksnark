@@ -48,10 +48,12 @@ macro_rules! impl_basics_2 {
                     Self::Public(t)
                 }
             }
+
             #[inline]
             pub fn from_public(t: T) -> Self {
                 Self::new(t, false)
             }
+
             #[inline]
             pub fn map<TT: $bound, SS: $share<TT>, FT: Fn(T) -> TT, FS: Fn(S) -> SS>(
                 self,
@@ -72,67 +74,15 @@ macro_rules! impl_basics_2 {
                 }
             }
         }
-        impl<T: $bound, S: $share<T>> ToBytes for $wrap<T, S> {
-            fn write<W: Write>(&self, writer: W) -> io::Result<()> {
-                match self {
-                    Self::Public(v) => v.write(writer),
-                    Self::Shared(_) => unimplemented!("write share: {}", self),
-                }
-            }
-        }
-        impl<T: $bound, S: $share<T>> FromBytes for $wrap<T, S> {
-            fn read<R: Read>(_reader: R) -> io::Result<Self> {
-                unimplemented!("read")
-            }
-        }
-        impl<T: $bound, S: $share<T>> CanonicalSerialize for $wrap<T, S> {
-            fn serialize<W: Write>(&self, writer: W) -> Result<(), SerializationError> {
-                match self {
-                    Self::Public(v) => v.serialize(writer),
-                    Self::Shared(_) => unimplemented!("serialize share: {}", self),
-                }
-            }
-            fn serialized_size(&self) -> usize {
-                match self {
-                    Self::Public(v) => v.serialized_size(),
-                    Self::Shared(_) => unimplemented!("serialized_size share: {}", self),
-                }
-            }
-        }
-        // NB: CanonicalSerializeWithFlags is unimplemented for Group.
-        impl<T: $bound, S: $share<T>> CanonicalSerializeWithFlags for $wrap<T, S> {
-            fn serialize_with_flags<W: Write, F: Flags>(
-                &self,
-                _writer: W,
-                _flags: F,
-            ) -> Result<(), SerializationError> {
-                unimplemented!("serialize_with_flags")
-            }
 
-            fn serialized_size_with_flags<F: Flags>(&self) -> usize {
-                unimplemented!("serialized_size_with_flags")
-            }
-        }
-        impl<T: $bound, S: $share<T>> CanonicalDeserialize for $wrap<T, S> {
-            fn deserialize<R: Read>(_reader: R) -> Result<Self, SerializationError> {
-                unimplemented!("deserialize")
-            }
-        }
-        impl<T: $bound, S: $share<T>> CanonicalDeserializeWithFlags for $wrap<T, S> {
-            fn deserialize_with_flags<R: Read, F: Flags>(
-                _reader: R,
-            ) -> Result<(Self, F), SerializationError> {
-                unimplemented!("deserialize_with_flags")
-            }
-        }
         impl<T: $bound, S: $share<T>> UniformRand for $wrap<T, S> {
             fn rand<R: Rng + ?Sized>(rng: &mut R) -> Self {
                 Self::Shared(<S as UniformRand>::rand(rng))
             }
         }
-        impl<T: $bound, S: $share<T>> PubUniformRand for $wrap<T, S> {
+        impl<T: $bound, S: $share<T>> mpc_trait::PubUniformRand for $wrap<T, S> {
             fn pub_rand<R: Rng + ?Sized>(rng: &mut R) -> Self {
-                Self::Public(<T as PubUniformRand>::pub_rand(rng))
+                Self::Public(<T as mpc_trait::PubUniformRand>::pub_rand(rng))
             }
         }
         //impl<T: $bound, S: $share<T>> Add for $wrap<T, S> {
@@ -174,18 +124,21 @@ macro_rules! impl_basics_2 {
                 }
             }
         }
+
         impl<T: $bound, S: $share<T>> Sum for $wrap<T, S> {
             #[inline]
             fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
                 iter.fold(Self::zero(), Add::add)
             }
         }
+
         impl<'a, T: $bound, S: $share<T> + 'a> Sum<&'a $wrap<T, S>> for $wrap<T, S> {
             #[inline]
             fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
                 iter.fold(Self::zero(), |x, y| x.add(y.clone()))
             }
         }
+
         impl<T: $bound, S: $share<T>> Neg for $wrap<T, S> {
             type Output = Self;
             #[inline]
@@ -199,6 +152,7 @@ macro_rules! impl_basics_2 {
                 }
             }
         }
+
         impl<'a, T: $bound, S: $share<T>> SubAssign<&'a $wrap<T, S>> for $wrap<T, S> {
             #[inline]
             fn sub_assign(&mut self, other: &Self) {
@@ -226,6 +180,7 @@ macro_rules! impl_basics_2 {
                 }
             }
         }
+
         impl<T: $bound, S: $share<T>> Zero for $wrap<T, S> {
             #[inline]
             fn zero() -> Self {
@@ -242,12 +197,14 @@ macro_rules! impl_basics_2 {
                 }
             }
         }
+
         impl<T: $bound, S: $share<T>> Zeroize for $wrap<T, S> {
             #[inline]
             fn zeroize(&mut self) {
                 *self = $wrap::Public(T::zero());
             }
         }
+
         impl<T: $bound, S: $share<T>> Default for $wrap<T, S> {
             fn default() -> Self {
                 Self::zero()

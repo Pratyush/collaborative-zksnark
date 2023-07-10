@@ -6,10 +6,10 @@ use ark_ff::prelude::*;
 use ark_ff::FftField;
 use mpc_trait::MpcWire;
 
+use crate::share::field::FieldShare;
+use crate::wire::field::MpcField;
 use crate::{channel, Reveal};
 use mpc_net::two as net_two;
-use crate::wire::field::MpcField;
-use crate::share::field::FieldShare;
 
 /// Vector-Commitable Field
 pub trait ComField: FftField + MpcWire {
@@ -22,14 +22,10 @@ pub trait ComField: FftField + MpcWire {
     fn check_opening(c: &Self::Commitment, p: Self::OpeningProof, i: usize, v: Self) -> bool;
 }
 
-impl<Fr: PrimeField, S: FieldShare<Fr>>  ComField for MpcField<Fr, S> {
+impl<Fr: PrimeField, S: FieldShare<Fr>> ComField for MpcField<Fr, S> {
     type Commitment = (Vec<u8>, Vec<u8>);
     type Key = Vec<Vec<Vec<u8>>>;
-    type OpeningProof = (
-        Fr,
-        Fr,
-        Vec<(Vec<u8>, Vec<u8>)>,
-    );
+    type OpeningProof = (Fr, Fr, Vec<(Vec<u8>, Vec<u8>)>);
     fn public_rand<R: Rng>(r: &mut R) -> Self {
         Self::from_public(Fr::rand(r))
     }

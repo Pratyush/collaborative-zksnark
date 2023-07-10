@@ -1,8 +1,13 @@
 [workspace]
 
 members = [
-    "relations",
-    "snark",
+    "mpc-net",
+    "mpc-trait",
+    # "mpc-snarks",
+    # "mpc-plonk",
+    "mpc-algebra",
+    # "groth16",
+    # "marlin",
 ]
 
 [profile.release]
@@ -29,3 +34,6 @@ lto = "thin"
 incremental = true
 debug-assertions = true
 debug = true
+
+[workspace.metadata.release]
+dependent-version = "fix"

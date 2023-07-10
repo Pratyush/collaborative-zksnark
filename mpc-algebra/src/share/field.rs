@@ -1,4 +1,3 @@
-use ark_ff::bytes::{FromBytes, ToBytes};
 use ark_ff::prelude::*;
 use ark_serialize::{
     CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
@@ -14,7 +13,7 @@ use super::BeaverSource;
 use crate::Reveal;
 
 pub trait FieldShare<F: Field>:
-    Clone
+    'static
     + Copy
     + Display
     + Debug
@@ -28,9 +27,6 @@ pub trait FieldShare<F: Field>:
     + CanonicalSerializeWithFlags
     + CanonicalDeserializeWithFlags
     + UniformRand
-    + ToBytes
-    + FromBytes
-    + 'static
     + Reveal<Base = F>
 {
     fn open(&self) -> F {
@@ -184,13 +180,9 @@ pub trait FieldShare<F: Field>:
     fn univariate_div_qr<'a>(
         _num: DenseOrSparsePolynomial<Self>,
         _den: DenseOrSparsePolynomial<F>,
-    ) -> Option<(
-        DensePolynomial<Self>,
-        DensePolynomial<Self>,
-    )> {
+    ) -> Option<(DensePolynomial<Self>, DensePolynomial<Self>)> {
         todo!("Implement generic poly div")
     }
-
 }
 
 pub type DensePolynomial<T> = Vec<T>;

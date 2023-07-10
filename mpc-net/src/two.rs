@@ -9,7 +9,6 @@ use ark_std::{end_timer, start_timer};
 
 use super::{MpcNet, Stats};
 
-#[macro_use]
 lazy_static! {
     pub static ref CH: Mutex<FieldChannel> = Mutex::new(FieldChannel::default());
 }

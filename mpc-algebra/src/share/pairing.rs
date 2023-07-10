@@ -1,4 +1,4 @@
-use ark_ec::{group::Group, AffineCurve, PairingEngine, ProjectiveCurve};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
 use ark_ff::Field;
 
 use std::fmt::Debug;
@@ -6,12 +6,7 @@ use std::fmt::Debug;
 use super::field::{ExtFieldShare, FieldShare};
 use super::group::GroupShare;
 
-pub trait AffProjShare<
-    Fr: Field,
-    A: AffineCurve<ScalarField = Fr> + Group,
-    P: ProjectiveCurve<Affine = A>,
->
-{
+pub trait AffProjShare<Fr: Field, A: AffineRepr<ScalarField = Fr>, P: CurveGroup<Affine = A>> {
     type FrShare: FieldShare<Fr>;
     type AffineShare: GroupShare<A, FieldShare = Self::FrShare>;
     type ProjectiveShare: GroupShare<P, FieldShare = Self::FrShare>;
@@ -31,7 +26,7 @@ pub trait AffProjShare<
     }
 }
 
-pub trait PairingShare<E: PairingEngine>:
+pub trait PairingShare<E: Pairing>:
     Clone + Copy + Debug + 'static + Send + Sync + PartialEq + Eq
 {
     type FrShare: FieldShare<E::Fr>;

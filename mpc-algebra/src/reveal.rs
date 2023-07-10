@@ -114,8 +114,7 @@ impl<T: Reveal> Reveal for Vec<T> {
             .collect()
     }
     fn unwrap_as_public(self) -> Self::Base {
-        self
-            .into_iter()
+        self.into_iter()
             .map(|x| <T as Reveal>::unwrap_as_public(x))
             .collect()
     }
@@ -150,8 +149,7 @@ where
             .collect()
     }
     fn unwrap_as_public(self) -> Self::Base {
-        self
-            .into_iter()
+        self.into_iter()
             .map(|x| Reveal::unwrap_as_public(x))
             .collect()
     }
@@ -179,8 +177,7 @@ impl<T: Reveal> Reveal for Option<T> {
         other.map(|x| <T as Reveal>::from_add_shared(x))
     }
     fn unwrap_as_public(self) -> Self::Base {
-        self
-            .map(|x| Reveal::unwrap_as_public(x))
+        self.map(|x| Reveal::unwrap_as_public(x))
     }
     fn init_protocol() {
         T::init_protocol()
@@ -318,5 +315,5 @@ macro_rules! struct_reveal_simp_impl {
 macro_rules! dbg_disp {
     ($e:expr) => {
         println!("{}: {}", std::stringify!($e), &$e)
-    }
+    };
 }
